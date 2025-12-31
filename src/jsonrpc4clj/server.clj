@@ -18,10 +18,10 @@
 
 (def null-output-stream-writer
   (java.io.OutputStreamWriter.
-    (proxy [java.io.OutputStream] []
-      (write
-        ([^bytes b])
-        ([^bytes b, off, len])))))
+   (proxy [java.io.OutputStream] []
+     (write
+       ([^bytes b])
+       ([^bytes b, off, len])))))
 
 (defmacro discarding-stdout
   "Evaluates body in a context in which writes to *out* are discarded."
@@ -118,10 +118,10 @@
   (let [ch (async/chan buf-or-n)]
     (async/thread
       (discarding-stdout
-        (loop []
-          (when-let [arg (async/<!! ch)]
-            (f arg)
-            (recur)))))
+       (loop []
+         (when-let [arg (async/<!! ch)]
+           (f arg)
+           (recur)))))
     ch))
 
 (def input-buffer-size
@@ -177,14 +177,18 @@
 
 (defn pending-received-request [method context params]
   (let [cancelled? (atom false)
-        ;; coerce result/error to promise
-        result-promise (p/promise
-                         (receive-request method
-                                          (assoc context ::req-cancelled? cancelled?)
-                                          params))]
+        ;; Run handler asynchronously to prevent blocking the request processing thread.
+        ;; Using p/future instead of p/promise ensures handlers run on a thread pool,
+        ;; allowing the main loop to continue processing other messages and responses.
+        ;; Wrap in discarding-stdout to prevent handler logging from corrupting JSON-RPC output.
+        result-promise (p/future
+                         (discarding-stdout
+                          (receive-request method
+                                           (assoc context ::req-cancelled? cancelled?)
+                                           params)))]
     (map->PendingReceivedRequest
-      {:result-promise result-promise
-       :cancelled? cancelled?})))
+     {:result-promise result-promise
+      :cancelled? cancelled?})))
 
 ;; TODO: https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#initialize
 ;; * receive-request should return error until initialize request is received
@@ -256,11 +260,11 @@
           ;; presumed to be both very rare and indicative of a problem that can
           ;; be solved only in the client or the language server.
           client-initiated-in-ch (thread-loop
-                                   input-buffer-size
-                                   (fn [[message-type message]]
-                                     (if (identical? :request message-type)
-                                       (protocols.endpoint/receive-request this context message)
-                                       (protocols.endpoint/receive-notification this context message))))
+                                  input-buffer-size
+                                  (fn [[message-type message]]
+                                    (if (identical? :request message-type)
+                                      (protocols.endpoint/receive-request this context message)
+                                      (protocols.endpoint/receive-notification this context message))))
           reject-pending-sent-requests (fn [exception]
                                          (doseq [pending-request (vals @pending-sent-requests*)]
                                            (p/reject! (:p pending-request)
@@ -277,7 +281,7 @@
                            (when-not (async/offer! client-initiated-in-ch [message-type message])
                              ;; Buffers full. Fail any waiting pending requests and...
                              (reject-pending-sent-requests
-                               (ex-info "Buffer of client messages exhausted." {}))
+                              (ex-info "Buffer of client messages exhausted." {}))
                              ;; ... try again, but park this time.
                              (async/>! client-initiated-in-ch [message-type message])))
                          (recur))
@@ -380,12 +384,12 @@
               :result-promise
               ;; convert result/error to response
               (p/then
-                (fn [result]
-                  (if (identical? ::method-not-found result)
-                    (do
-                      (protocols.endpoint/log this :warn "received unexpected request" method)
-                      (responses/error resp (errors/not-found method)))
-                    (responses/infer resp result))))
+               (fn [result]
+                 (if (identical? ::method-not-found result)
+                   (do
+                     (protocols.endpoint/log this :warn "received unexpected request" method)
+                     (responses/error resp (errors/not-found method)))
+                   (responses/infer resp result))))
               ;; Handle
               ;; 1. Exceptions thrown within p/future created by receive-request.
               ;; 2. Cancelled requests.
@@ -433,15 +437,15 @@
         log-ch (or log-ch (async/chan (async/sliding-buffer 20)))
         trace-ch (or trace-ch (async/chan (async/sliding-buffer 20)))]
     (map->ChanServer
-      {:output-ch output-ch
-       :input-ch input-ch
-       :log-ch log-ch
-       :trace-ch trace-ch
-       :tracer* (atom tracer)
-       :clock clock
-       :on-close on-close
-       :response-executor response-executor
-       :request-id* (atom 0)
-       :pending-sent-requests* (atom {})
-       :pending-received-requests* (atom {})
-       :join (promise)})))
+     {:output-ch output-ch
+      :input-ch input-ch
+      :log-ch log-ch
+      :trace-ch trace-ch
+      :tracer* (atom tracer)
+      :clock clock
+      :on-close on-close
+      :response-executor response-executor
+      :request-id* (atom 0)
+      :pending-sent-requests* (atom {})
+      :pending-received-requests* (atom {})
+      :join (promise)})))
