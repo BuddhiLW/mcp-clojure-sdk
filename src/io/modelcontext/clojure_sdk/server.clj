@@ -71,12 +71,28 @@
 (defn coerce-tool-response
   "Coerces a tool response into the expected format.
    If the response is not sequential, wraps it in a vector.
-   If the tool has an outputSchema, adds structuredContent."
+   If the tool has an outputSchema, adds structuredContent.
+   Preserves _meta field from response for bidirectional async communication.
+
+   IMPORTANT: Uses string key \"_meta\" not keyword :_meta because jsonrpc4clj's
+   camelCase converter (csk/->camelCaseString) strips underscore prefixes from
+   keywords, turning :_meta into \"meta\". String keys bypass this conversion."
   [tool response]
-  (let [response (if (sequential? response) (vec response) [response])
-        base-map {:content response}]
+  (let [;; Handle case where response is a map with :_meta (keyword from handler)
+        meta-data (when (map? response) (:_meta response))
+        ;; Extract content - if response is a map with content keys, use them
+        content (cond
+                  (and (map? response) (:content response)) (:content response)
+                  (sequential? response) (vec response)
+                  :else [response])
+        content (if (sequential? content) (vec content) [content])
+        base-map {:content content}]
     ;; @TODO: [ref: structured-content-should-match-output-schema-exactly]
-    (cond-> base-map (:outputSchema tool) (assoc :structuredContent response))))
+    ;; NOTE: Must use string key "_meta" - keyword :_meta becomes "meta"
+    ;; due to jsonrpc4clj camelCase conversion stripping underscore prefix
+    (cond-> base-map
+      (:outputSchema tool) (assoc :structuredContent content)
+      meta-data (assoc "_meta" meta-data))))
 
 (defn- handle-call-tool
   [context params]

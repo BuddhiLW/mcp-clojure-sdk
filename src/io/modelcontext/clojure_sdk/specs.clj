@@ -60,7 +60,8 @@
 ;; notifications/progress). The value of this parameter is an opaque
 ;; token that will be attached to any subsequent notifications. The
 ;; receiver is not obligated to provide these notifications.
-(s/def :json-rpc.message/_meta (s/keys :opt-un [::progressToken]))
+;; NOTE: Extended to allow arbitrary keys for bidirectional async communication
+(s/def :json-rpc.message/_meta (s/map-of keyword? any?))
 ;; Parameters
 (s/def :json-rpc.message/params (s/keys :opt-un [:json-rpc.message/_meta]))
 
@@ -493,7 +494,7 @@
 ;; in the result.
 (s/def :call-tool-response/unstructured-result
   (s/keys :req-un [:call-tool-response/content]
-          :opt-un [:call-tool-response/isError]))
+          :opt-un [:call-tool-response/isError :json-rpc.message/_meta]))
 
 ;; Tool result for tools that do declare an outputSchema.
 ;; [tag: structured-content-should-match-output-schema-exactly]
@@ -504,7 +505,7 @@
 ;; `content` is for backward compatibility with older clients.
 (s/def :call-tool-response/structured-result
   (s/keys :req-un [:call-tool-response/structuredContent]
-          :opt-un [:call-tool-response/content :call-tool-response/isError]))
+          :opt-un [:call-tool-response/content :call-tool-response/isError :json-rpc.message/_meta]))
 
 (s/def :call-tool-response/result
   (s/and (s/or :structured :call-tool-response/structured-result

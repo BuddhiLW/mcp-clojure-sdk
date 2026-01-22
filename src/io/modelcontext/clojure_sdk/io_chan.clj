@@ -20,7 +20,9 @@
   [^java.io.BufferedReader input]
   (try (let [content (.readLine input)]
          (log/trace :fn :read-message :line content)
-         (json/read-str content))
+         (if (nil? content)
+           :parse-error  ; EOF reached
+           (json/read-str content)))
        (catch Exception ex (log/error :fn :read-message :ex ex) :parse-error)))
 
 (defn ^:private kw->camelCaseString
