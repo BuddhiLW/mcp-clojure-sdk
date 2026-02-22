@@ -17,11 +17,17 @@
 ;; https://modelcontextprotocol.io/specification
 
 (defn ^:private read-message
+  "Read a single JSON-RPC message from the input.
+   Returns:
+     ::eof         - clean end-of-stream (.readLine returned nil)
+     :parse-error  - malformed JSON (recoverable, skip and continue)
+     nil           - json/read-str returned nil (JSON null literal)
+     <map>         - valid parsed JSON-RPC message"
   [^java.io.BufferedReader input]
   (try (let [content (.readLine input)]
          (log/trace :fn :read-message :line content)
          (if (nil? content)
-           :parse-error  ; EOF reached
+           ::eof
            (json/read-str content)))
        (catch Exception ex (log/error :fn :read-message :ex ex) :parse-error)))
 
@@ -44,7 +50,12 @@
   the `input`. When the input is closed, closes the channel. By default when the
   channel closes, will close the input, but can be determined by `close?`.
 
-  Reads in a thread to avoid blocking a go block thread."
+  Reads in a thread to avoid blocking a go block thread.
+
+  EOF handling: When stdin closes (e.g. Emacs parent exits), the channel is
+  closed gracefully. Parse errors skip the bad message and continue reading.
+  nil values from json/read-str (JSON null) are skipped to prevent
+  AssertionError on the core.async channel."
   [input]
   (log/trace :fn :input-stream->input-chan :msg "Creating new input-chan")
   (let [messages (async/chan 1)]
@@ -54,15 +65,31 @@
         (loop []
           (let [msg (read-message reader)]
             (cond
-              ;; input closed; also close channel
-              (= msg :parse-error) (do (log/debug :fn :input-stream->input-chan
-                                                  :error true
-                                                  :msg "Parse error or EOF")
-                                       (async/close! messages))
-              :else (do (log/trace :fn :input-stream->input-chan :msg msg)
-                        (when (async/>!! messages msg)
-                          ;; wait for next message
-                          (recur))))))))
+              ;; Clean EOF - stdin closed, shut down gracefully
+              (= msg ::eof)
+              (do (log/info :fn :input-stream->input-chan
+                            :msg "Stdin EOF detected, closing channel gracefully")
+                  (async/close! messages))
+
+              ;; Parse error - log warning and skip (don't kill server)
+              (= msg :parse-error)
+              (do (log/warn :fn :input-stream->input-chan
+                            :msg "JSON parse error, skipping malformed message")
+                  (recur))
+
+              ;; nil from json/read-str (JSON null) - skip to prevent
+              ;; AssertionError: Can't put nil on channel
+              (nil? msg)
+              (do (log/debug :fn :input-stream->input-chan
+                             :msg "Skipping nil message (JSON null)")
+                  (recur))
+
+              ;; Valid message - put on channel
+              :else
+              (do (log/trace :fn :input-stream->input-chan :msg msg)
+                  (when (async/>!! messages msg)
+                    ;; wait for next message
+                    (recur))))))))
     messages))
 
 (defn output-stream->output-chan
