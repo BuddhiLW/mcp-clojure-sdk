@@ -287,40 +287,144 @@
   (identity ::specs/complete-response)
   ::jsonrpc.server/method-not-found)
 
-;;; @TODO: Notifications to Implement
+;;; Notification Receivers
+;; Notifications received from the client.
 
 ;; [ref: cancelled_notification]
 (defmethod jsonrpc.server/receive-notification "notifications/cancelled"
-  [_method _context _params]
-  (identity ::specs/cancelled-notification)
-  ::jsonrpc.server/method-not-found)
-
-;; @TODO: Implement send-notification "notifications/cancelled" when request is
-;; cancelled
+  [_ context params]
+  (log/trace :fn :receive-notification
+             :method "notifications/cancelled"
+             :params params)
+  (conform-or-log ::specs/cancelled-notification params)
+  ;; Record the cancellation. Handlers can check this atom to abort work.
+  (when-let [request-id (:requestId params)]
+    (when-let [cancelled (:cancelled-requests context)]
+      (swap! cancelled conj request-id)
+      (log/debug :msg "Request cancelled by client"
+                 :request-id request-id
+                 :reason (:reason params))))
+  nil)
 
 ;; [ref: progress_notification]
 (defmethod jsonrpc.server/receive-notification "notifications/progress"
-  [_method _context _params]
-  (identity ::specs/progress-notification)
-  ::jsonrpc.server/method-not-found)
+  [_ _context params]
+  (log/trace :fn :receive-notification
+             :method "notifications/progress"
+             :params params)
+  (conform-or-log ::specs/progress-notification params)
+  ;; Progress notifications from client are informational; log and continue.
+  (log/debug :msg "Progress notification received"
+             :progress-token (:progressToken params)
+             :progress (:progress params)
+             :total (:total params))
+  nil)
 
-;; @TODO: Implement send-notification "notifications/progress" for long-lived
-;; requests
+;; [ref: roots_list_changed_notification]
+;; Client informs server that the list of roots has changed.
+(defmethod jsonrpc.server/receive-notification "notifications/roots/list_changed"
+  [_ context params]
+  (log/trace :fn :receive-notification
+             :method "notifications/roots/list_changed"
+             :params params)
+  (conform-or-log ::specs/root-list-changed-notification params)
+  ;; Invoke callback if registered, so server can re-request roots.
+  (when-let [on-roots-changed (:on-roots-changed context)]
+    (try (on-roots-changed context)
+         (catch Exception e
+           (log/error :msg "Error in on-roots-changed callback"
+                      :error (.getMessage e)))))
+  nil)
 
-;; @TODO: Implement [ref: resource_list_changed_notification] for when list of
-;; resources available to the client changes.
+;;; Notification Senders
+;; Functions for sending notifications from server to client.
+;; All take context (which must contain :server) and conform params to spec.
 
-;; @TODO: Implement [ref: resource_updated_notification] for when a resource is
-;; updated at the server
+(defn send-notification!
+  "Send a JSON-RPC notification from server to client.
+   Requires :server key in context (set during start!)."
+  [context method params]
+  (if-let [server (:server context)]
+    (do (log/trace :fn :send-notification! :method method)
+        (jsonrpc.server/send-notification server method params))
+    (log/error :fn :send-notification!
+               :msg "Cannot send notification: no :server in context"
+               :method method)))
 
-;; @TODO: Implement [ref: prompt_list_changed_notification] for when list of
-;; prompts available to the client changes.
+;; [ref: tool_list_changed_notification]
+(defn send-tools-list-changed!
+  "Notify client that the list of available tools has changed.
+   method: notifications/tools/list_changed"
+  [context]
+  (let [params {}]
+    (conform-or-log ::specs/tool-list-changed-notification params)
+    (send-notification! context "notifications/tools/list_changed" params)))
 
-;; @TODO: Implement [ref: tool_list_changed_notification] for when list of
-;; tools available to the client changes.
+;; [ref: resource_list_changed_notification]
+(defn send-resources-list-changed!
+  "Notify client that the list of available resources has changed.
+   method: notifications/resources/list_changed"
+  [context]
+  (let [params {}]
+    (conform-or-log ::specs/resource-list-changed-notification params)
+    (send-notification! context "notifications/resources/list_changed" params)))
 
-;; @TODO: Implement [ref: logging_message_notification] for when server wants
-;; to send a logging message to the client.
+;; [ref: resource_updated_notification]
+(defn send-resource-updated!
+  "Notify client that a specific resource has been updated.
+   Only sent if client previously subscribed via resources/subscribe.
+   method: notifications/resources/updated"
+  [context uri]
+  (let [params {:uri uri}]
+    (conform-or-log ::specs/resource-updated-notification params)
+    (send-notification! context "notifications/resources/updated" params)))
+
+;; [ref: prompt_list_changed_notification]
+(defn send-prompts-list-changed!
+  "Notify client that the list of available prompts has changed.
+   method: notifications/prompts/list_changed"
+  [context]
+  (let [params {}]
+    (conform-or-log ::specs/prompt-list-changed-notification params)
+    (send-notification! context "notifications/prompts/list_changed" params)))
+
+;; [ref: progress_notification] (server -> client)
+(defn send-progress!
+  "Send a progress notification for a long-running request.
+   progress-token: opaque token from the original request's _meta.progressToken
+   progress: current progress value (should increase monotonically)
+   total: optional total value (nil if unknown)"
+  [context progress-token progress & {:keys [total]}]
+  (let [params (cond-> {:progressToken progress-token
+                        :progress progress}
+                 total (assoc :total total))]
+    ;; Validate against spec (logs on non-conformance, Postel's law)
+    (conform-or-log ::specs/progress-notification params)
+    (send-notification! context "notifications/progress" params)))
+
+;; [ref: cancelled_notification] (server -> client)
+(defn send-cancelled!
+  "Notify client that the server is cancelling a previously-issued request.
+   request-id: the id of the request being cancelled
+   reason: optional human-readable reason"
+  [context request-id & {:keys [reason]}]
+  (let [params (cond-> {:requestId request-id}
+                 reason (assoc :reason reason))]
+    (conform-or-log ::specs/cancelled-notification params)
+    (send-notification! context "notifications/cancelled" params)))
+
+;; [ref: logging_message_notification]
+(defn send-log-message!
+  "Send a logging message notification to the client.
+   level: one of \"debug\" \"info\" \"notice\" \"warning\" \"error\"
+          \"critical\" \"alert\" \"emergency\"
+   data: the log data (any JSON-serializable value)
+   logger: optional logger name string"
+  [context level data & {:keys [logger]}]
+  (let [params (cond-> {:level level :data data}
+                 logger (assoc :logger logger))]
+    (conform-or-log ::specs/logging-message-notification params)
+    (send-notification! context "notifications/message" params)))
 
 ;;; Server Spec
 
@@ -340,20 +444,53 @@
   server-spec)
 
 (defn register-tool!
+  "Register a tool and optionally notify connected clients of the change.
+   Sends notifications/tools/list_changed if :server is present in context."
   [context tool handler]
-  (swap! (:tools context) assoc (:name tool) {:tool tool, :handler handler}))
+  (swap! (:tools context) assoc (:name tool) {:tool tool, :handler handler})
+  (when (:server context)
+    (send-tools-list-changed! context)))
+
+(defn unregister-tool!
+  "Remove a tool by name and notify connected clients of the change."
+  [context tool-name]
+  (swap! (:tools context) dissoc tool-name)
+  (when (:server context)
+    (send-tools-list-changed! context)))
 
 (defn register-resource!
+  "Register a resource and optionally notify connected clients of the change.
+   Sends notifications/resources/list_changed if :server is present in context."
   [context resource handler]
   (swap! (:resources context) assoc
     (:uri resource)
-    {:resource resource, :handler handler}))
+    {:resource resource, :handler handler})
+  (when (:server context)
+    (send-resources-list-changed! context)))
+
+(defn unregister-resource!
+  "Remove a resource by URI and notify connected clients of the change."
+  [context uri]
+  (swap! (:resources context) dissoc uri)
+  (when (:server context)
+    (send-resources-list-changed! context)))
 
 (defn register-prompt!
+  "Register a prompt and optionally notify connected clients of the change.
+   Sends notifications/prompts/list_changed if :server is present in context."
   [context prompt handler]
   (swap! (:prompts context) assoc
     (:name prompt)
-    {:prompt prompt, :handler handler}))
+    {:prompt prompt, :handler handler})
+  (when (:server context)
+    (send-prompts-list-changed! context)))
+
+(defn unregister-prompt!
+  "Remove a prompt by name and notify connected clients of the change."
+  [context prompt-name]
+  (swap! (:prompts context) dissoc prompt-name)
+  (when (:server context)
+    (send-prompts-list-changed! context)))
 
 (defn- create-empty-context
   [name version]
@@ -373,7 +510,11 @@
    :prompts (atom {}),
    :protocol (atom nil),
    :capabilities (atom {:tools {}, :resources {}, :prompts {}}),
-   :connected-clients (atom {})})
+   :connected-clients (atom {}),
+   ;; Set of request IDs that have been cancelled by the client.
+   ;; Handlers can check (contains? @(:cancelled-requests ctx) request-id)
+   ;; to abort long-running work early.
+   :cancelled-requests (atom #{})})
 
 (defn create-context!
   "Create and configure an MCP server from a configuration map.
@@ -416,10 +557,23 @@
         (register-prompt! context (dissoc prompt :handler) (:handler prompt)))
       context)))
 
+(defn request-cancelled?
+  "Check if a request has been cancelled by the client.
+   Useful for long-running tool handlers to check and abort early."
+  [context request-id]
+  (contains? @(:cancelled-requests context) request-id))
+
 (defn start!
+  "Start the server and associate it with the context for notification sending.
+   The :server key in context is required for send-*! notification functions."
   [server context]
   (log/info :msg "[SERVER] Starting server...")
-  (jsonrpc.server/start server context))
+  ;; Associate server with context so notification senders can find it.
+  ;; NOTE: This mutates the context map by assoc'ing :server. Since context
+  ;; is a plain map (not an atom), this works because jsonrpc.server/start
+  ;; receives the enriched context.
+  (let [context (assoc context :server server)]
+    (jsonrpc.server/start server context)))
 
 (defn chan-server
   []
