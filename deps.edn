@@ -6,9 +6,9 @@
           :ns-default build},
   :cider
   {:extra-deps {cider/cider-nrepl {:mvn/version "0.58.0"},
-                djblue/portal {:mvn/version "0.62.2"},
+                djblue/portal {:mvn/version "0.63.1"},
                 mx.cider/tools.deps.enrich-classpath {:mvn/version "1.19.3"},
-                nrepl/nrepl {:mvn/version "1.5.1"},
+                nrepl/nrepl {:mvn/version "1.6.0"},
                 refactor-nrepl/refactor-nrepl {:mvn/version "3.11.0"}},
    :jvm-opts ["-Djdk.attach.allowAttachSelf"],
    :main-opts
@@ -19,9 +19,9 @@
    :extra-deps {cider/cider-nrepl {:mvn/version "0.58.0"},
                 com.github.flow-storm/clojure {:mvn/version "1.12.4"},
                 com.github.flow-storm/flow-storm-dbg {:mvn/version "4.5.9"},
-                djblue/portal {:mvn/version "0.62.2"},
+                djblue/portal {:mvn/version "0.63.1"},
                 mx.cider/tools.deps.enrich-classpath {:mvn/version "1.19.3"},
-                nrepl/nrepl {:mvn/version "1.5.1"},
+                nrepl/nrepl {:mvn/version "1.6.0"},
                 refactor-nrepl/refactor-nrepl {:mvn/version "3.11.0"}},
    :jvm-opts
    ["-Dflowstorm.startRecording=false" "-Dclojure.storm.instrumentEnable=true"
@@ -38,9 +38,9 @@
     "-Dlog4j2.contextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector"
     "-Dlog4j2.configurationFile=logger/log4j2-mcp.xml"
     "-Dbabashka.json.provider=metosin/jsonista" "-Dlogging.level=DEBUG"]},
-  :test {:extra-deps {babashka/fs {:mvn/version "0.5.31"},
+  :test {:extra-deps {babashka/fs {:mvn/version "0.5.32"},
                       babashka/process {:mvn/version "0.6.25"},
-                      dev.weavejester/medley {:mvn/version "1.9.0"},
+                      dev.weavejester/medley {:mvn/version "1.10.0"},
                       io.github.cognitect-labs/test-runner {:git/sha "dfb30dd",
                                                             :git/tag "v0.5.1"},
                       org.clojure/test.check {:mvn/version "1.1.2"}},
@@ -58,7 +58,7 @@
         me.vedang/logger {:local/root "utils/logger"},
         ;; JSON: Use babashka/json as a thin wrapper over metosin/jsonista
         ;; for Clojure, clojure.data/json for Babashka
-        metosin/jsonista {:mvn/version "0.3.13"},
+        metosin/jsonista {:mvn/version "1.0.0"},
         org.babashka/json {:mvn/version "0.1.6"},
         ;; Clojure version
         org.clojure/clojure {:mvn/version "1.12.4"},

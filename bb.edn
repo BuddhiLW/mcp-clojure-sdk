@@ -1,5 +1,5 @@
 {:deps {com.github.clojure-lsp/lsp4clj {:mvn/version "2.0.1"},
-        dev.weavejester/medley {:mvn/version "1.9.0"},
+        dev.weavejester/medley {:mvn/version "1.10.0"},
         nubank/matcher-combinators {:mvn/version "3.10.0"},
         org.babashka/spec.alpha
         {:git/sha "b6eb0f2208ab036c0a5d0e7235cb0b09d2feabb7",
