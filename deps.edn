@@ -2,13 +2,13 @@
 ;; Run a REPL with `make repl`
 {:aliases
  {:build {:deps {io.github.clojure/tools.build {:mvn/version "0.10.11"},
-                 slipset/deps-deploy {:mvn/version "0.2.2"}},
+                 slipset/deps-deploy {:mvn/version "0.2.3"}},
           :ns-default build},
   :cider
   {:extra-deps {cider/cider-nrepl {:mvn/version "0.58.0"},
                 djblue/portal {:mvn/version "0.63.1"},
                 mx.cider/tools.deps.enrich-classpath {:mvn/version "1.19.3"},
-                nrepl/nrepl {:mvn/version "1.6.0"},
+                nrepl/nrepl {:mvn/version "1.7.0"},
                 refactor-nrepl/refactor-nrepl {:mvn/version "3.11.0"}},
    :jvm-opts ["-Djdk.attach.allowAttachSelf"],
    :main-opts
@@ -21,7 +21,7 @@
                 com.github.flow-storm/flow-storm-dbg {:mvn/version "4.5.9"},
                 djblue/portal {:mvn/version "0.63.1"},
                 mx.cider/tools.deps.enrich-classpath {:mvn/version "1.19.3"},
-                nrepl/nrepl {:mvn/version "1.6.0"},
+                nrepl/nrepl {:mvn/version "1.7.0"},
                 refactor-nrepl/refactor-nrepl {:mvn/version "3.11.0"}},
    :jvm-opts
    ["-Dflowstorm.startRecording=false" "-Dclojure.storm.instrumentEnable=true"
