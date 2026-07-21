@@ -1,0 +1,6 @@
+{:lib      io.github.hive-agi/mcp-clojure-sdk
+ :minor    1
+ :license  {:name "MIT" :url "https://opensource.org/licenses/MIT"}
+ :scm-url  "https://github.com/BuddhiLW/mcp-clojure-sdk"
+ :src-dirs ["src"]
+ :publish  :clojars}
