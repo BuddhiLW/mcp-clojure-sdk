@@ -1,7 +1,7 @@
 ;;; Instructions:
 ;; Run a REPL with `make repl`
 {:aliases
- {:build {:deps {io.github.hive-agi/hive-build {:mvn/version "0.1.8"}}
+ {:build {:deps {io.github.hive-agi/hive-build {:mvn/version "0.1.9"}}
           :ns-default hive-build.api},
   :cider
   {:extra-deps {cider/cider-nrepl {:mvn/version "0.62.2"},
