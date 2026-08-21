@@ -1,27 +1,27 @@
 ;;; Instructions:
 ;; Run a REPL with `make repl`
 {:aliases
- {:build {:deps {io.github.hive-agi/hive-build {:mvn/version "0.1.0"}}
+ {:build {:deps {io.github.hive-agi/hive-build {:mvn/version "0.1.8"}}
           :ns-default hive-build.api},
   :cider
-  {:extra-deps {cider/cider-nrepl {:mvn/version "0.58.0"},
-                djblue/portal {:mvn/version "0.63.1"},
+  {:extra-deps {cider/cider-nrepl {:mvn/version "0.62.2"},
+                djblue/portal {:mvn/version "0.67.2"},
                 mx.cider/tools.deps.enrich-classpath {:mvn/version "1.19.3"},
                 nrepl/nrepl {:mvn/version "1.7.0"},
-                refactor-nrepl/refactor-nrepl {:mvn/version "3.11.0"}},
+                refactor-nrepl/refactor-nrepl {:mvn/version "3.14.0"}},
    :jvm-opts ["-Djdk.attach.allowAttachSelf"],
    :main-opts
    ["-m" "nrepl.cmdline" "--interactive" "--color" "--middleware"
     "[cider.nrepl/cider-middleware,refactor-nrepl.middleware/wrap-refactor,portal.nrepl/wrap-portal]"]},
   :cider-storm
   {:classpath-overrides {org.clojure/clojure nil},
-   :extra-deps {cider/cider-nrepl {:mvn/version "0.58.0"},
+   :extra-deps {cider/cider-nrepl {:mvn/version "0.62.2"},
                 com.github.flow-storm/clojure {:mvn/version "1.12.4"},
-                com.github.flow-storm/flow-storm-dbg {:mvn/version "4.5.9"},
-                djblue/portal {:mvn/version "0.63.1"},
+                com.github.flow-storm/flow-storm-dbg {:mvn/version "4.8.1"},
+                djblue/portal {:mvn/version "0.67.2"},
                 mx.cider/tools.deps.enrich-classpath {:mvn/version "1.19.3"},
                 nrepl/nrepl {:mvn/version "1.7.0"},
-                refactor-nrepl/refactor-nrepl {:mvn/version "3.11.0"}},
+                refactor-nrepl/refactor-nrepl {:mvn/version "3.14.0"}},
    :jvm-opts
    ["-Dflowstorm.startRecording=false" "-Dclojure.storm.instrumentEnable=true"
     "-Dflowstorm.jarEditorCommand=emacsclient --eval '(let ((b (cider-find-file \"jar:file:<<JAR>>!/<<FILE>>\"))) (with-current-buffer b (switch-to-buffer b) (goto-char (point-min)) (forward-line (1- <<LINE>>))))'"
@@ -37,7 +37,7 @@
     "-Dlog4j2.contextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector"
     "-Dlog4j2.configurationFile=logger/log4j2-mcp.xml"
     "-Dbabashka.json.provider=metosin/jsonista" "-Dlogging.level=DEBUG"]},
-  :test {:extra-deps {babashka/fs {:mvn/version "0.5.32"},
+  :test {:extra-deps {babashka/fs {:mvn/version "0.5.34"},
                       babashka/process {:mvn/version "0.6.25"},
                       dev.weavejester/medley {:mvn/version "1.10.0"},
                       io.github.cognitect-labs/test-runner {:git/sha "dfb30dd",
