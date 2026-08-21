@@ -63,5 +63,5 @@
         org.clojure/clojure {:mvn/version "1.12.5"},
         ;; Messaging: All messaging over the transport uses core.async to
         ;; hand-over work
-        org.clojure/core.async {:mvn/version "1.8.741"}},
+        org.clojure/core.async {:mvn/version "1.9.865"}},
  :paths ["src" "resources"]}
