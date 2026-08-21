@@ -16,7 +16,7 @@
   :cider-storm
   {:classpath-overrides {org.clojure/clojure nil},
    :extra-deps {cider/cider-nrepl {:mvn/version "0.62.2"},
-                com.github.flow-storm/clojure {:mvn/version "1.12.4"},
+                com.github.flow-storm/clojure {:mvn/version "1.12.5-1"},
                 com.github.flow-storm/flow-storm-dbg {:mvn/version "4.8.1"},
                 djblue/portal {:mvn/version "0.67.2"},
                 mx.cider/tools.deps.enrich-classpath {:mvn/version "1.19.3"},
