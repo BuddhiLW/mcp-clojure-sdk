@@ -1,5 +1,14 @@
 # io.modelcontext/clojure-sdk
 
+<!-- hive-badges -->
+
+[![Clojars Project](https://img.shields.io/clojars/v/io.github.hive-agi/mcp-clojure-sdk.svg)](https://clojars.org/io.github.hive-agi/mcp-clojure-sdk)
+[![cljdoc](https://cljdoc.org/badge/io.github.hive-agi/mcp-clojure-sdk)](https://cljdoc.org/d/io.github.hive-agi/mcp-clojure-sdk/CURRENT)
+[![release](https://github.com/BuddhiLW/mcp-clojure-sdk/actions/workflows/release.yml/badge.svg)](https://github.com/BuddhiLW/mcp-clojure-sdk/actions/workflows/release.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+
+<!-- /hive-badges -->
+
 A `clojure-sdk` for creating Model Context Protocol servers!
 
 ## Table of Contents          :TOC_4:
