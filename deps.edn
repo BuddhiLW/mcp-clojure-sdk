@@ -57,7 +57,7 @@
         me.vedang/logger {:local/root "utils/logger"},
         ;; JSON: Use babashka/json as a thin wrapper over metosin/jsonista
         ;; for Clojure, clojure.data/json for Babashka
-        metosin/jsonista {:mvn/version "1.0.0"},
+        metosin/jsonista {:mvn/version "1.0.1"},
         org.babashka/json {:mvn/version "0.1.6"},
         ;; Clojure version
         org.clojure/clojure {:mvn/version "1.12.5"},
