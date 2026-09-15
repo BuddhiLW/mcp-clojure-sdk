@@ -1,7 +1,7 @@
 ;;; Instructions:
 ;; Run a REPL with `make repl`
 {:aliases
- {:build {:deps {io.github.hive-agi/hive-build {:mvn/version "0.1.15"}}
+ {:build {:deps {io.github.hive-agi/hive-build {:mvn/version "0.1.17"}}
           :ns-default hive-build.api},
   :cider
   {:extra-deps {cider/cider-nrepl {:mvn/version "0.62.2"},
@@ -60,7 +60,7 @@
         metosin/jsonista {:mvn/version "1.0.1"},
         org.babashka/json {:mvn/version "0.1.6"},
         ;; Clojure version
-        org.clojure/clojure {:mvn/version "1.12.5"},
+        org.clojure/clojure {:mvn/version "1.12.6"},
         ;; Messaging: All messaging over the transport uses core.async to
         ;; hand-over work
         org.clojure/core.async {:mvn/version "1.9.865"}},
