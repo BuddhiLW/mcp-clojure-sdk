@@ -1,0 +1,7 @@
+{:project-id "mcp-clojure-sdk"
+ :parent "hive"
+ :description "Vendored io.modelcontext/clojure-sdk — JVM Clojure SDK for building Model Context Protocol servers. Reference/base, not hive-specific."
+ :language :clojure
+ :type :reference
+ :tags ["mcp" "sdk" "external" "reference"]
+ :carto {:source-roots ["src" "test"]}}
